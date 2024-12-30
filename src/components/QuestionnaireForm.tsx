@@ -1,79 +1,118 @@
 import React, { useState } from 'react';
-import { questions } from '../data/questions';
+import { useLanguage } from '../contexts/LanguageContext';
+import translations from '../translations.json';
 import { UserPreferences } from '../types';
 
 interface QuestionnaireFormProps {
-  onSubmit: (preferences: UserPreferences) => void;
-  loading?: boolean;
-  error?: string | null;
+  onSubmit: (answers: UserPreferences) => void;
+  loading: boolean;
+  error: string | null;
 }
 
-export function QuestionnaireForm({ onSubmit, loading, error }: QuestionnaireFormProps) {
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<UserPreferences>({});
+const QUESTIONS = [
+  {
+    id: 'movie-genre',
+    category: 'movies',
+    options: ['Action & Adventure', 'Drama', 'Comedy', 'Sci-Fi', 'Mystery']
+  },
+  {
+    id: 'book-genre',
+    category: 'books',
+    options: ['Fiction', 'Mystery', 'Science Fiction', 'Biography', 'Fantasy']
+  },
+  {
+    id: 'cuisine-type',
+    category: 'food',
+    options: ['Italian', 'Asian', 'Mediterranean', 'Mexican', 'American']
+  }
+];
 
-  const handleAnswer = (answer: string) => {
+export function QuestionnaireForm({ onSubmit, loading, error }: QuestionnaireFormProps) {
+  const { language } = useLanguage();
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+
+  const question = QUESTIONS[currentQuestion];
+  const questionTranslations = translations.questionnaire.questions[question.id];
+
+  const handleOptionSelect = (option: string) => {
     const newAnswers = {
       ...answers,
-      [questions[currentQuestion].id]: answer,
+      [question.category]: option
     };
+
     setAnswers(newAnswers);
 
-    if (currentQuestion < questions.length - 1) {
+    if (currentQuestion < QUESTIONS.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
-      onSubmit(newAnswers);
+      console.log('Submitting answers:', { ...newAnswers, language });
+      onSubmit({ ...newAnswers, language });
     }
   };
 
-  const question = questions[currentQuestion];
-
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <div className="mb-8">
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div
-            className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
-            style={{
-              width: `${((currentQuestion + 1) / questions.length) * 100}%`,
-            }}
-          />
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-lg">
+        {error && (
+          <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+            <p className="font-semibold mb-2">{translations.errors.api[language]}</p>
+            <p>{error}</p>
+            <p className="mt-2 text-sm text-red-600">
+              {translations.errors.general[language]}
+            </p>
+          </div>
+        )}
+
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-xl font-semibold text-gray-900">
+                {questionTranslations.text[language]}
+              </h2>
+              <span className="text-sm text-gray-500">
+                {translations.questionnaire.progress.question[language]
+                  .replace('{current}', String(currentQuestion + 1))
+                  .replace('{total}', String(QUESTIONS.length))}
+              </span>
+            </div>
+            
+            <div className="h-2 bg-gray-200 rounded-full">
+              <div
+                className="h-2 bg-indigo-600 rounded-full transition-all duration-300"
+                style={{
+                  width: `${((currentQuestion + 1) / QUESTIONS.length) * 100}%`,
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {question.options.map((option) => (
+              <button
+                key={option}
+                onClick={() => handleOptionSelect(option)}
+                disabled={loading}
+                className={`w-full p-4 text-left rounded-lg border transition-colors duration-200 ${
+                  loading
+                    ? 'opacity-50 cursor-not-allowed'
+                    : 'hover:bg-indigo-50 hover:border-indigo-300'
+                }`}
+              >
+                <span className="font-medium text-gray-900">
+                  {questionTranslations.options[option][language]}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {loading && (
+            <div className="mt-4 text-center text-gray-600">
+              {translations.questionnaire.loading[language]}
+            </div>
+          )}
         </div>
-        <p className="text-sm text-gray-600 mt-2">
-          Question {currentQuestion + 1} of {questions.length}
-        </p>
       </div>
-
-      <h2 className="text-2xl font-semibold mb-6">{question.text}</h2>
-
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      <div className="space-y-3">
-        {question.options.map((option) => (
-          <button
-            key={option}
-            onClick={() => handleAnswer(option)}
-            disabled={loading}
-            className={`w-full p-4 text-left border rounded-lg transition-colors ${
-              loading
-                ? 'opacity-50 cursor-not-allowed'
-                : 'hover:bg-indigo-50 hover:border-indigo-300'
-            }`}
-          >
-            {option}
-          </button>
-        ))}
-      </div>
-
-      {loading && (
-        <div className="mt-4 text-center text-gray-600">
-          Generating personalized recommendations...
-        </div>
-      )}
     </div>
   );
 }

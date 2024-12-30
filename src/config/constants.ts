@@ -1,5 +1,5 @@
 export const API_CONFIG = {
-  GEMINI_URL: 'https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent',
+  GEMINI_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
   GEMINI_KEY: import.meta.env.VITE_GEMINI_API_KEY,
 };
 

@@ -8,15 +8,20 @@ export interface Question {
   category: Category;
 }
 
+export interface UserPreferences {
+  name: string;
+  movies?: string;
+  books?: string;
+  food?: string;
+  language: 'en' | 'ja';
+}
+
 export interface Recommendation {
   id: string;
   title: string;
   description: string;
-  imageUrl: string;
   rating: number;
   category: Category;
-}
-
-export interface UserPreferences {
-  [key: string]: string;
+  imageUrl: string;
+  externalUrl: string;
 }
