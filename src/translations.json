@@ -1,0 +1,226 @@
+{
+  "welcome": {
+    "title": {
+      "en": "Next-Gen AI Recommender",
+      "ja": "次世代AIレコメンダー"
+    },
+    "subtitle": {
+      "en": "Discover personalized recommendations powered by advanced AI. Answer a few simple questions, and let our system surprise you with eerily accurate suggestions.",
+      "ja": "高度なAIを活用したパーソナライズされたおすすめを発見しましょう。簡単な質問に答えるだけで、驚くほど正確な提案をご提供します。"
+    },
+    "nameInput": {
+      "placeholder": {
+        "en": "Enter your name",
+        "ja": "お名前を入力"
+      }
+    },
+    "nextButton": {
+      "en": "Next",
+      "ja": "次へ"
+    }
+  },
+  "questionnaire": {
+    "title": {
+      "en": "Tell Us About Your Preferences",
+      "ja": "あなたの好みについて教えてください"
+    },
+    "progress": {
+      "question": {
+        "en": "Question {current} of {total}",
+        "ja": "質問 {current} / {total}"
+      }
+    },
+    "loading": {
+      "en": "Generating personalized recommendations...",
+      "ja": "パーソナライズされたおすすめを生成中..."
+    },
+    "submitButton": {
+      "en": "Get Recommendations",
+      "ja": "おすすめを取得"
+    },
+    "questions": {
+      "movie-genre": {
+        "text": {
+          "en": "What type of movies do you enjoy the most?",
+          "ja": "どのような映画が好きですか？"
+        },
+        "options": {
+          "Action & Adventure": {
+            "en": "Action & Adventure",
+            "ja": "アクション・アドベンチャー"
+          },
+          "Drama": {
+            "en": "Drama",
+            "ja": "ドラマ"
+          },
+          "Comedy": {
+            "en": "Comedy",
+            "ja": "コメディ"
+          },
+          "Sci-Fi": {
+            "en": "Sci-Fi",
+            "ja": "SF"
+          },
+          "Mystery": {
+            "en": "Mystery",
+            "ja": "ミステリー"
+          }
+        }
+      },
+      "book-genre": {
+        "text": {
+          "en": "Which book genre interests you?",
+          "ja": "どのような本のジャンルに興味がありますか？"
+        },
+        "options": {
+          "Fiction": {
+            "en": "Fiction",
+            "ja": "小説"
+          },
+          "Mystery": {
+            "en": "Mystery",
+            "ja": "ミステリー"
+          },
+          "Science Fiction": {
+            "en": "Science Fiction",
+            "ja": "SF"
+          },
+          "Biography": {
+            "en": "Biography",
+            "ja": "伝記"
+          },
+          "Fantasy": {
+            "en": "Fantasy",
+            "ja": "ファンタジー"
+          }
+        }
+      },
+      "cuisine-type": {
+        "text": {
+          "en": "What cuisine do you prefer?",
+          "ja": "どのような料理が好きですか？"
+        },
+        "options": {
+          "Italian": {
+            "en": "Italian",
+            "ja": "イタリアン"
+          },
+          "Asian": {
+            "en": "Asian",
+            "ja": "アジア料理"
+          },
+          "Mediterranean": {
+            "en": "Mediterranean",
+            "ja": "地中海料理"
+          },
+          "Mexican": {
+            "en": "Mexican",
+            "ja": "メキシカン"
+          },
+          "American": {
+            "en": "American",
+            "ja": "アメリカン"
+          }
+        }
+      }
+    }
+  },
+  "results": {
+    "header": {
+      "title": {
+        "en": "Your Personalized Recommendations",
+        "ja": "あなたへのおすすめ"
+      }
+    },
+    "categories": {
+      "movies": {
+        "en": "Movies",
+        "ja": "映画"
+      },
+      "books": {
+        "en": "Books",
+        "ja": "本"
+      },
+      "food": {
+        "en": "Food",
+        "ja": "料理"
+      }
+    },
+    "card": {
+      "learnMore": {
+        "en": "Learn More",
+        "ja": "詳細を見る"
+      },
+      "rating": {
+        "en": "Rating",
+        "ja": "評価"
+      },
+      "correlations": {
+        "en": "You might also like",
+        "ja": "おすすめの関連アイテム"
+      },
+      "resonancePoints": {
+        "en": "Why this matches you",
+        "ja": "あなたに合う理由"
+      },
+      "growthPotential": {
+        "en": "Growth Potential",
+        "ja": "発展可能性"
+      }
+    },
+    "noResults": {
+      "all": {
+        "en": "No recommendations available. Please try again.",
+        "ja": "おすすめが見つかりませんでした。もう一度お試しください。"
+      },
+      "category": {
+        "en": "No recommendations found for this category.",
+        "ja": "このカテゴリーのおすすめが見つかりませんでした。"
+      }
+    }
+  },
+  "errors": {
+    "general": {
+      "en": "Failed to get recommendations. Please try again.",
+      "ja": "おすすめの取得に失敗しました。もう一度お試しください。"
+    },
+    "api": {
+      "en": "Error: ",
+      "ja": "エラー: "
+    }
+  },
+  "common": {
+    "loading": {
+      "en": "Loading...",
+      "ja": "読み込み中..."
+    },
+    "error": {
+      "en": "Error",
+      "ja": "エラー"
+    },
+    "tryAgain": {
+      "en": "Please try again",
+      "ja": "もう一度お試しください"
+    },
+    "noRecommendations": {
+      "en": "No recommendations found. Please try again.",
+      "ja": "おすすめが見つかりませんでした。もう一度お試しください。"
+    },
+    "rating": {
+      "en": "Rating",
+      "ja": "評価"
+    },
+    "learnMore": {
+      "en": "Learn More",
+      "ja": "詳細を見る"
+    }
+  },
+  "en": {
+    "noRecommendationsError": "No recommendations found. Please try adjusting your preferences.",
+    "generalError": "An error occurred while getting recommendations. Please try again."
+  },
+  "ja": {
+    "noRecommendationsError": "おすすめが見つかりませんでした。設定を変更してお試しください。",
+    "generalError": "おすすめの取得中にエラーが発生しました。もう一度お試しください。"
+  }
+}
