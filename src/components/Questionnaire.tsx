@@ -162,7 +162,7 @@ export function Questionnaire({ onSubmit }: { onSubmit: (preferences: UserPrefer
                 }
               }}
             />
-            Personal Growth
+            {language === 'ja' ? '自己成長' : 'Personal Growth'}
           </label>
           <label className="flex items-center gap-2">
             <input
@@ -176,7 +176,7 @@ export function Questionnaire({ onSubmit }: { onSubmit: (preferences: UserPrefer
                 }
               }}
             />
-            Creative Expression
+            {language === 'ja' ? '創造的表現' : 'Creative Expression'}
           </label>
         </div>
       </section>
