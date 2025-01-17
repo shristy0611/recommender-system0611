@@ -6,6 +6,7 @@ export interface TranslationsWithFunctions {
   recommendationsTitle: string;
   currentContext: string;
   personalityTraits: string;
+  personalityProfile: string;
   
   // Recommendation Card
   impactPrimary: string;
@@ -16,6 +17,8 @@ export interface TranslationsWithFunctions {
   longTerm: string;
   mindfulness: string;
   groupActivity: string;
+  noRecommendationsError: string;
+  generalError: string;
   
   // Personality Traits
   openness: string;
@@ -121,7 +124,7 @@ export interface UserPreferences {
 }
 
 export interface Recommendation {
-  id: string;
+  id?: string;
   title: string;
   description: string;
   category: string;
@@ -138,18 +141,14 @@ export interface Recommendation {
   };
   personalizedInsights: {
     alignmentReason: string[];
-    benefitAreas: string[];
-    challengeAreas: string[];
   };
   enjoymentFactors: {
     shortTerm: string;
     longTerm: string;
-    relatedInterests: string[];
   };
   wellbeingAspects: {
     mindfulness: boolean;
-    fulfillmentScore: number;
-    personalGrowth: string;
+    fulfillment: string;
   };
   socialAspect: {
     groupActivity: boolean;
