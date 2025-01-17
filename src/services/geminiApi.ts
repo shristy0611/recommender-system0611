@@ -32,206 +32,142 @@ interface RecommendationResponse {
   recommendations: Recommendation[];
 }
 
+interface RawRecommendation {
+  title: string;
+  description: string;
+  description_en: string;
+  category: string;
+  context_relevance: string;
+  context_relevance_en: string;
+  traits_alignment: string[];
+  growth_aspects: string;
+  growth_aspects_en: string;
+  examples: Array<{
+    name: string;
+    details: string;
+    details_en: string;
+    reason: string;
+    reason_en: string;
+  }>;
+}
+
 // Cache for storing previous recommendations
 const recommendationCache = new Map<string, RecommendationResponse>();
 
-// Cache key generator
+/**
+ * Generates a unique cache key based on user preferences
+ * to allow reuse of recommendations for the same user profile.
+ */
 function generateCacheKey(preferences: UserPreferences): string {
   return JSON.stringify({
     language: preferences.language,
     profile: {
       traits: preferences.profile.traits,
-      interests: preferences.profile.interests,
-      values: preferences.profile.values,
-      goals: preferences.profile.goals
+      interests: preferences.profile.interests.sort(),
+      goals: preferences.profile.goals.sort()
     },
     context: {
       mood: preferences.context.mood,
       timeOfDay: preferences.context.timeOfDay,
       energyLevel: preferences.context.energyLevel
+    },
+    lifestyle: {
+      activityLevel: preferences.lifestyle.activityLevel,
+      workStyle: preferences.lifestyle.workStyle,
+      socialStyle: preferences.lifestyle.socialStyle
     }
   });
 }
 
+/**
+ * Creates a prompt for the LLM, emphasizing that it should act as
+ * an exceptionally intelligent psychological scholar by analyzing
+ * user traits, goals, and context holistically.
+ */
 function createPrompt(preferences: UserPreferences): string {
   const { language, profile, context, lifestyle } = preferences;
   const isJapanese = language === 'ja';
 
-  const preferencesText = JSON.stringify({
-    personality: profile.traits,
-    interests: profile.interests,
-    values: profile.values,
-    goals: profile.goals,
-    context: {
-      mood: context.mood,
-      timeOfDay: context.timeOfDay,
-      energyLevel: context.energyLevel
-    },
-    lifestyle: {
-      activityLevel: lifestyle.activityLevel,
-      workStyle: lifestyle.workStyle,
-      socialStyle: lifestyle.socialStyle
-    }
-  }, null, 2);
+  // Convert trait object to a printable string
+  const traits = Object.entries(profile.traits)
+    .map(([trait, value]) => `${trait}: ${value}/5`)
+    .join(', ');
 
-  const languageContext = isJapanese ? 
-    "あなたは個人の充実した生活をサポートするライフスタイルアドバイザーとして、以下の観点から分析を行います：\n" +
-    "1. 趣味と個人の成長\n" +
-    "2. エンターテインメントと創造性\n" +
-    "3. 心身の健康とウェルビーイング\n" +
-    "4. 文化的活動と自己表現\n" +
-    "5. 社会的つながりと個人の満足度\n\n" +
-    "重要: 映画、音楽、瞑想などの活動を通じて、より豊かな個人生活を実現する方法を提案してください。" :
-    "As a lifestyle advisor focused on personal enrichment, analyze from these perspectives:\n" +
-    "1. Hobbies and personal growth\n" +
-    "2. Entertainment and creativity\n" +
-    "3. Physical and mental wellbeing\n" +
-    "4. Cultural activities and self-expression\n" +
-    "5. Social connections and personal satisfaction\n\n" +
-    "Important: Suggest ways to enhance personal life through movies, music, meditation, and other enriching activities.";
+  const interestList = profile.interests.join(', ');
+  const goalsList = profile.goals.join(', ');
+  const moodAndTime = `Current mood: ${context.mood}, Time: ${context.timeOfDay}, Energy: ${context.energyLevel}/5`;
+  const lifestylePrefs = `Activity level: ${lifestyle.activityLevel}, Work style: ${lifestyle.workStyle}, Social style: ${lifestyle.socialStyle}`;
 
-  const responseInstructions = isJapanese ? 
-    `以下の形式の有効なJSONオブジェクトのみで応答してください。
-各推薦は個人の充実した生活を実現するための具体的な提案としてください。
-趣味や文化的活動が、なぜ個人の幸福度を高めるのかを説明してください。
-すべての文章は日本語で書き、親しみやすく説明してください。` :
-    `Respond with ONLY a valid JSON object. 
-Each recommendation should focus on personal enrichment and life satisfaction.
-Explain how hobbies and cultural activities enhance personal happiness.
-All text must be in English and kept friendly and approachable.`;
+  // Main prompt text
+  const basePrompt = `
+You are an exceptionally intelligent recommendation system with deep knowledge of global culture, entertainment, and lifestyle activities.
+${isJapanese ? 'You are also deeply knowledgeable about Japanese culture, media, and lifestyle.' : ''}
 
-  const formatInstructions = isJapanese ? `
+USER PROFILE AND CONTEXT:
+- Traits: ${traits}
+- Interests: ${interestList}
+- Goals: ${goalsList}
+- Current State: ${moodAndTime}
+- Lifestyle: ${lifestylePrefs}
+
+Your task:
+1. Generate 5 recommendation categories that match their interests and current context.
+2. For each category, provide 3-4 specific examples with detailed information.
+3. Focus on actionable, concrete suggestions they can try immediately.
+
+Important guidelines:
+${isJapanese ? `- For Japanese users:
+  * All recommendations must be in Japanese first, followed by English translations
+  * Include both Japanese and international options, with emphasis on Japanese content
+  * Format examples like this:
+    - Music: "YOASOBI - アイドル (Idol)" 
+    - Books: "村上春樹 - 海辺のカフカ (Kafka on the Shore)"
+    - Movies: "千と千尋の神隠し (Spirited Away)"
+  * For each recommendation, include:
+    - Japanese title/name (in kanji/kana)
+    - English translation
+    - Japanese description
+    - English description
+    - Why it matches their preferences (in both languages)`
+: `- For English users:
+  * Provide recommendations in English
+  * Focus on international content, with emphasis on their cultural interests
+  * Include specific details like:
+    - Music: Artist name, song title, genre, year
+    - Books: Author, title, genre, themes
+    - Movies: Title, director, key actors, genre
+  * Explain why each recommendation matches their preferences`}
+
+Format your response as a valid JSON object with this structure:
+
 {
   "recommendations": [
     {
-      "title": "心を豊かにする活動のタイトル",
-      "description": "活動の詳細な説明と、それがどのように人生を豊かにするか（2-3文）",
-      "category": "entertainment|creativity|wellness|culture|social|nature|learning|relaxation",
-      "rating": 1-5,
-      "impact": {
-        "primary": "主な生活への影響",
-        "secondary": ["その他の良い影響"],
-        "score": 0-1
-      },
-      "contextualRelevance": {
-        "mood": ["この活動に適した気分"],
-        "timeOfDay": ["おすすめの時間帯"],
-        "energyRequired": 1-5
-      },
-      "personalizedInsights": {
-        "alignmentReason": ["性格との相性", "興味との一致"],
-        "benefitAreas": ["心身の健康", "個人の成長"],
-        "challengeAreas": ["始める際の課題"]
-      },
-      "enjoymentFactors": {
-        "shortTerm": "すぐに感じられる喜び",
-        "longTerm": "長期的な充実感",
-        "relatedInterests": ["関連する趣味や活動"]
-      },
-      "wellbeingAspects": {
-        "mindfulness": boolean,
-        "fulfillmentScore": 0-1,
-        "personalGrowth": "成長につながる側面"
-      },
-      "socialAspect": {
-        "groupActivity": boolean,
-        "interactionType": "一人/グループ/オンライン等",
-        "socialInteractionLevel": 0-5
-      }
+      "category": "string (e.g., 'Music Collection', 'Wellness Routine')",
+      "title": ${isJapanese ? '"string (Japanese title / English translation)"' : '"string (engaging title)"'},
+      "description": ${isJapanese ? '"string (Japanese description / English description)"' : '"string (description)"'},
+      "examples": [
+        {
+          "name": ${isJapanese ? '"string (Japanese name / English name)"' : '"string (specific name)"'},
+          "details": ${isJapanese ? '"string (Japanese details / English details)"' : '"string (specific details)"'},
+          "reason": ${isJapanese ? '"string (Japanese reason / English reason)"' : '"string (specific reason)"}' }
+        }
+      ],
+      "traits_alignment": ["string (key traits this matches)"],
+      "context_relevance": "string (when/how to best engage with these)",
+      "growth_aspects": ${isJapanese ? '"string (Japanese growth aspects / English growth aspects)"' : '"string (growth aspects)"'}
     }
   ]
-}` : `
-{
-  "recommendations": [
-    {
-      "title": "life-enriching activity title",
-      "description": "detailed activity description and how it enriches life (2-3 sentences)",
-      "category": "entertainment|creativity|wellness|culture|social|nature|learning|relaxation",
-      "rating": 1-5,
-      "impact": {
-        "primary": "main life impact area",
-        "secondary": ["other positive effects"],
-        "score": 0-1
-      },
-      "contextualRelevance": {
-        "mood": ["suitable moods for this activity"],
-        "timeOfDay": ["recommended times"],
-        "energyRequired": 1-5
-      },
-      "personalizedInsights": {
-        "alignmentReason": ["personality fit", "interest match"],
-        "benefitAreas": ["mental/physical wellbeing", "personal growth"],
-        "challengeAreas": ["getting started challenges"]
-      },
-      "enjoymentFactors": {
-        "shortTerm": "immediate joy and satisfaction",
-        "longTerm": "lasting fulfillment",
-        "relatedInterests": ["connected hobbies and activities"]
-      },
-      "wellbeingAspects": {
-        "mindfulness": boolean,
-        "fulfillmentScore": 0-1,
-        "personalGrowth": "growth and development aspects"
-      },
-      "socialAspect": {
-        "groupActivity": boolean,
-        "interactionType": "solo/group/online etc",
-        "socialInteractionLevel": 0-5
-      }
-    }
-  ]
-}`;
+}
+`.trim();
 
-  const importantNotes = isJapanese ? `
-重要な注意点:
-1. 個人の興味と成長に焦点を当てる
-2. 映画、音楽、文学などの文化的活動の個人的な価値を説明
-3. 瞑想やマインドフルネスの実践的な効果を提示
-4. 6つの推薦を目指す: 
-   - 創造的活動2件（芸術、音楽、料理など）
-   - 心身の健康活動2件（運動、瞑想など）
-   - 社会的/文化的活動2件（グループ活動、文化体験など）
-5. 各推薦は個人の幸福度向上に焦点を当てる
-6. すべての内容は日本語で提供する` : `
-Important Notes:
-1. Focus on personal interests and growth
-2. Explain the personal value of cultural activities like films, music, and literature
-3. Present practical benefits of meditation and mindfulness
-4. Aim for 6 recommendations:
-   - 2 creative activities (art, music, cooking, etc.)
-   - 2 wellness activities (exercise, meditation, etc.)
-   - 2 social/cultural activities (group activities, cultural experiences)
-5. Each recommendation should focus on enhancing personal happiness
-6. Provide all content in English`;
-
-  return `${languageContext}
-
-${isJapanese ? 'プロフィール分析:' : 'Profile Analysis:'}
-${preferencesText}
-
-${responseInstructions}
-${formatInstructions}
-${importantNotes}
-
-Additional Context:
-- Movies can inspire creativity, emotional awareness, and cultural understanding
-- Music enhances mood, emotional expression, and personal enjoyment
-- Meditation improves mental clarity, emotional balance, and inner peace
-- Literature develops imagination, empathy, and personal reflection
-- Cultural activities build social connections and broaden perspectives
-- Creative pursuits foster self-expression and personal satisfaction
-
-Personalization Guidelines:
-- For high energy levels: More active and engaging activities
-- For low energy levels: Calming and restorative experiences
-- Morning recommendations: Energizing and inspiring activities
-- Evening recommendations: Relaxing and reflective pursuits
-- Consider weather and seasonal activities
-- Adapt to social preferences (solo vs. group activities)
-- Account for current mood in activity selection
-- Balance familiar comforts with new experiences`;
+  return basePrompt;
 }
 
+/**
+ * Sends a request to the Gemini API with the generated prompt.
+ * Ensure you have a valid Gemini API key set in your .env file.
+ */
 async function makeGeminiRequest(prompt: string): Promise<GeminiResponse> {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
   
@@ -240,7 +176,7 @@ async function makeGeminiRequest(prompt: string): Promise<GeminiResponse> {
   }
 
   const request: GeminiRequest = {
-    model: "gemini-pro",
+    model: "gemini-2.0-flash-thinking-exp-1219",
     contents: [
       {
         parts: [
@@ -298,9 +234,17 @@ async function makeGeminiRequest(prompt: string): Promise<GeminiResponse> {
   }
 }
 
-async function parseRecommendations(data: GeminiResponse, language: string = 'ja'): Promise<RecommendationResponse> {
+/**
+ * Parses the Gemini API response to extract recommendations.
+ * Handles JSON extraction, parsing, and structural validation.
+ */
+async function parseRecommendations(
+  data: GeminiResponse,
+  language: string = 'ja'
+): Promise<RecommendationResponse> {
   try {
-    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+    const candidateContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!candidateContent) {
       throw new APIError(
         language === 'ja'
           ? 'Gemini APIからの応答フォーマットが無効です'
@@ -308,136 +252,114 @@ async function parseRecommendations(data: GeminiResponse, language: string = 'ja
       );
     }
 
-    const responseText = data.candidates[0].content.parts[0].text;
-    console.log('Raw API response text:', responseText);
+    console.log('Raw API response text:', candidateContent);
     
-    // Extract JSON from the response text (it might be wrapped in markdown code blocks)
-    let jsonText = responseText;
-    const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    // Extract JSON from within possible code blocks
+    let jsonText = candidateContent;
+    const jsonMatch = candidateContent.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
     if (jsonMatch) {
       jsonText = jsonMatch[1];
     }
     
-    // Attempt to fix truncated JSON
-    let cleanedText = jsonText.trim();
-    
-    // Fix common truncation patterns
-    if (cleanedText.match(/description":\s*"[^"]*"(?:\s*,\s*)?$/)) {
-      cleanedText += '}}]}';
-    } else if (cleanedText.match(/description":\s*"[^"]*$/)) {
-      cleanedText += '"}}}]}';
-    } else if (!cleanedText.endsWith('}}]}')) {
-      // Count braces and fix if needed
-      const openBraces = (cleanedText.match(/{/g) || []).length;
-      const closeBraces = (cleanedText.match(/}/g) || []).length;
-      
-      if (openBraces > closeBraces) {
-        const missingBraces = openBraces - closeBraces;
-        cleanedText += '}'.repeat(missingBraces) + ']}';
-        console.log('Fixed truncated JSON by adding missing braces:', cleanedText);
-      }
-    }
-    
+    const cleanedText = jsonText.trim();
     console.log('Cleaned JSON text:', cleanedText);
-    
-    let parsed;
+
+    // Process the JSON text to handle duplicate keys and incomplete content
+    let processedText = cleanedText
+      // Remove markdown code block syntax if present
+      .replace(/^```json\s*|\s*```$/g, '')
+      // Keep only the Japanese description for Japanese users, English for others
+      .replace(/"description"\s*:\s*"([^"]+)"\s*,\s*"description"\s*:\s*"([^"]+)"/g, 
+        (_, jp, en) => `"description": "${language === 'ja' ? jp : en}"`)
+      // Keep only the Japanese details for Japanese users, English for others
+      .replace(/"details"\s*:\s*"([^"]+)"\s*,\s*"details"\s*:\s*"([^"]+)"/g,
+        (_, jp, en) => `"details": "${language === 'ja' ? jp : en}"`)
+      // Keep only the Japanese reason for Japanese users, English for others
+      .replace(/"reason"\s*:\s*"([^"]+)"\s*,\s*"reason"\s*:\s*"([^"]+)"/g,
+        (_, jp, en) => `"reason": "${language === 'ja' ? jp : en}"`)
+      // Keep only the Japanese context_relevance for Japanese users, English for others
+      .replace(/"context_relevance"\s*:\s*"([^"]+)"\s*,\s*"context_relevance"\s*:\s*"([^"]+)"/g,
+        (_, jp, en) => `"context_relevance": "${language === 'ja' ? jp : en}"`)
+      // Keep only the Japanese growth_aspects for Japanese users, English for others
+      .replace(/"growth_aspects"\s*:\s*"([^"]+)"\s*,\s*"growth_aspects"\s*:\s*"([^"]+)"/g,
+        (_, jp, en) => `"growth_aspects": "${language === 'ja' ? jp : en}"`)
+      // Remove any trailing incomplete objects
+      .replace(/,\s*{\s*"category":[^}]*$/g, '')
+      // Fix trailing commas
+      .replace(/,(\s*[}\]])/g, '$1')
+      // Remove any extra closing brackets that might have been added
+      .replace(/\]\s*\}(\s*\]\s*\})+$/, ']}');
+
+    console.log('Processed JSON text:', processedText);
+
+    let parsed: { recommendations: RawRecommendation[] };
     try {
-      parsed = JSON.parse(cleanedText);
-    } catch (error) {
-      console.error('JSON parse error:', error);
-      console.error('Problematic JSON:', cleanedText);
-      
-      // Extract complete recommendations
-      const recommendations = [];
-      const recMatches = cleanedText.matchAll(/{(?:[^{}]|{[^{}]*})*}/g);
-      for (const match of recMatches) {
-        try {
-          const rec = JSON.parse(match[0]);
-          if (rec.title && rec.description && rec.category) {
-            recommendations.push(rec);
-          }
-        } catch (e) {
-          console.warn('Failed to parse recommendation:', match[0]);
-        }
-      }
-      
-      if (recommendations.length > 0) {
-        parsed = { recommendations };
-        console.log('Successfully extracted partial recommendations:', parsed);
-      } else {
-        throw new APIError(
-          language === 'ja'
-            ? 'APIレスポンスの解析に失敗しました。モデルが無効なJSONを返しました。'
-            : 'Failed to parse API response. The model returned invalid JSON.',
-          undefined,
-          cleanedText
-        );
-      }
+      parsed = JSON.parse(processedText);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      throw new APIError(
+        language === 'ja'
+          ? 'APIレスポンスの解析に失敗しました。モデルが無効なJSONを返しました。'
+          : 'Failed to parse API response. The model returned invalid JSON.',
+        undefined,
+        cleanedText
+      );
     }
 
     if (!parsed.recommendations || !Array.isArray(parsed.recommendations)) {
       throw new APIError(
         language === 'ja'
-          ? '無効な推薦フォーマット：推薦配列が見つからないか無効です'
-          : 'Invalid recommendations format: missing or invalid recommendations array'
+          ? '推薦が見つかりませんでした'
+          : 'No recommendations found'
       );
     }
 
-    // Process all recommendations in parallel
-    const validatedRecommendations = parsed.recommendations.map((rec: any, index: number) => {
-      if (!rec.title || !rec.description || !rec.category) {
-        throw new APIError(
-          language === 'ja'
-            ? `インデックス ${index} の推薦フォーマットが無効です：必須フィールドが不足しています`
-            : `Invalid recommendation format at index ${index}: missing required fields`
-        );
+    const recommendations = parsed.recommendations.map((rec, index) => ({
+      id: `${index + 1}`,
+      title: rec.title,
+      description: rec.description,
+      category: rec.category,
+      rating: 4,
+      impact: {
+        primary: rec.category.toLowerCase(),
+        secondary: [],
+        score: 0.8
+      },
+      contextualRelevance: {
+        mood: [rec.context_relevance],
+        timeOfDay: ['any'],
+        energyRequired: 3
+      },
+      personalizedInsights: {
+        alignmentReason: rec.traits_alignment,
+        benefitAreas: [rec.growth_aspects],
+        challengeAreas: []
+      },
+      enjoymentFactors: {
+        shortTerm: rec.examples.map(ex => ex.name).join(', '),
+        longTerm: rec.growth_aspects,
+        relatedInterests: []
+      },
+      wellbeingAspects: {
+        mindfulness: true,
+        fulfillmentScore: 0.8,
+        personalGrowth: rec.growth_aspects
+      },
+      socialAspect: {
+        groupActivity: rec.category.toLowerCase().includes('social'),
+        interactionType: rec.category.toLowerCase().includes('social') ? 'shared' : 'solo',
+        socialInteractionLevel: rec.category.toLowerCase().includes('social') ? 3 : 1
+      },
+      specificDetails: {
+        examples: rec.examples.map(ex => ({
+          name: ex.name,
+          details: ex.details,
+          reason: ex.reason
+        }))
       }
+    }));
 
-      const rating = Math.min(Math.max(Math.round(rec.rating || 3), 1), 5);
-      const category = (rec.category || '').toLowerCase();
-
-      return {
-        id: `${index + 1}`,
-        title: rec.title,
-        description: rec.description,
-        category,
-        rating,
-        impact: rec.impact || {
-          primary: category,
-          secondary: [],
-          score: rating / 5
-        },
-        contextualRelevance: rec.contextualRelevance || {
-          mood: [],
-          timeOfDay: [],
-          energyRequired: 3
-        },
-        personalizedInsights: rec.personalizedInsights || {
-          alignmentReason: [],
-          benefitAreas: [],
-          challengeAreas: []
-        },
-        enjoymentFactors: rec.enjoymentFactors || {
-          shortTerm: '',
-          longTerm: '',
-          relatedInterests: []
-        },
-        wellbeingAspects: rec.wellbeingAspects || {
-          mindfulness: true,
-          fulfillmentScore: rating / 5,
-          personalGrowth: ''
-        },
-        socialAspect: rec.socialAspect || {
-          groupActivity: false,
-          interactionType: 'solo',
-          socialInteractionLevel: 1
-        }
-      };
-    });
-
-    return {
-      recommendations: validatedRecommendations
-    };
+    return { recommendations };
   } catch (error) {
     console.error('Error parsing recommendations:', error);
     if (error instanceof APIError) {
@@ -453,30 +375,30 @@ async function parseRecommendations(data: GeminiResponse, language: string = 'ja
   }
 }
 
-function enrichRecommendations(recommendations: Recommendation[], index: number): Recommendation {
-  return {
-    ...recommendations[index],
-    id: `${index + 1}`
-  };
-}
-
+/**
+ * Retrieves or generates recommendations based on the user's preferences.
+ * If a matching cache entry exists, returns it; otherwise calls the Gemini API.
+ */
 export async function getRecommendations(preferences: UserPreferences): Promise<Recommendation[]> {
   try {
     // Try to get from cache first
     const cacheKey = generateCacheKey(preferences);
     const cachedResponse = recommendationCache.get(cacheKey);
+
     if (cachedResponse) {
-      console.log('Returning cached recommendations');
+      console.log('Returning cached recommendations for user:', cacheKey);
       return cachedResponse.recommendations;
     }
 
-    console.log('Generating recommendations for:', preferences);
+    console.log('Generating new recommendations for:', preferences);
     const prompt = createPrompt(preferences);
     console.log('Generated prompt length:', prompt.length);
     
+    // Call Gemini API
     const response = await makeGeminiRequest(prompt);
     console.log('Got API response:', response);
     
+    // Parse recommendations from response
     const parsedResponse = await parseRecommendations(response, preferences.language);
     console.log('Parsed recommendations:', parsedResponse);
     
@@ -506,15 +428,4 @@ export async function getRecommendations(preferences: UserPreferences): Promise<
       error instanceof Error ? error.message : String(error)
     );
   }
-}
-
-function handleAPIError(error: unknown): never {
-  if (error instanceof APIError) {
-    throw error;
-  }
-  throw new APIError(
-    'Failed to get recommendations',
-    undefined,
-    error instanceof Error ? error.message : String(error)
-  );
 }

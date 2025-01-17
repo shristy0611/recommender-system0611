@@ -1,6 +1,18 @@
 import type { Translations } from '../types';
 
 export const translations: Translations = {
+  common: {
+    noRecommendations: {
+      en: "No recommendations found",
+      ja: "推奨事項が見つかりません"
+    }
+  },
+  errors: {
+    general: {
+      en: "An error occurred",
+      ja: "エラーが発生しました"
+    }
+  },
   en: {
     // General
     interests: 'Your Interests',
@@ -77,6 +89,13 @@ export const translations: Translations = {
     
     // Functions
     daysPerWeek: (days: number) => `${days} days per week`,
+    
+    recommendationDetails: {
+      whyRecommended: "Why we recommend this",
+      perfectFor: "Perfect for",
+      specificDetails: "Details",
+      basedOnTraits: "Based on your traits",
+    }
   },
   ja: {
     // General
@@ -154,5 +173,12 @@ export const translations: Translations = {
     
     // Functions
     daysPerWeek: (days: number) => `週${days}日`,
+    
+    recommendationDetails: {
+      whyRecommended: "おすすめの理由",
+      perfectFor: "最適な時",
+      specificDetails: "詳細",
+      basedOnTraits: "あなたの特性に基づいて",
+    }
   }
 }; 

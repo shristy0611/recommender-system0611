@@ -33,7 +33,7 @@ export interface UserContext {
   mood: MoodType;
   timeOfDay: TimeContext;
   energyLevel: EnergyLevel;
-  recentActivities?: string[];
+  recentActivities: string[];
   stressLevel?: number;
 }
 
@@ -53,36 +53,43 @@ export interface Recommendation {
   title: string;
   description: string;
   category: Category;
+  specificDetails: {
+    movies?: {
+      genre: string[];
+      specificTitles: string[];
+      actors?: string[];
+      directors?: string[];
+    };
+    music?: {
+      genre: string[];
+      artists: string[];
+      specificSongs?: string[];
+    };
+    cuisine?: {
+      dishNames: string[];
+      cuisine: string;
+      ingredients?: string[];
+    };
+  };
   rating: number;
   impact: {
     primary: string;
-    secondary: string[];
     score: number;
   };
   contextualRelevance: {
     mood: string[];
     timeOfDay: string[];
     energyRequired: number;
+    perfectFor: string;
   };
   personalizedInsights: {
-    alignmentReason: string[];
-    benefitAreas: string[];
-    challengeAreas: string[];
+    whyThisRecommendation: string;
+    basedOnTraits: string[];
   };
-  growthPotential: {
-    shortTerm: string;
-    longTerm: string;
-    relatedSkills: string[];
-  };
-  sustainability: {
-    ecoFriendly: boolean;
-    sustainabilityScore: number;
-    environmentalImpact: string;
-  };
-  socialAspect: {
-    groupActivity: boolean;
-    collaborationType: string;
-    socialInteractionLevel: number;
+  japaneseVersion?: {
+    title: string;
+    description: string;
+    specificDetails: string;
   };
 }
 

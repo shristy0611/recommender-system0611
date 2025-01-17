@@ -1,9 +1,9 @@
-import React, { useState, ChangeEvent } from 'react';
+import { useState, ChangeEvent } from 'react';
 import { Questionnaire } from './components/Questionnaire';
 import { RecommendationCard } from './components/RecommendationCard';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { translations } from './translations/index';
-import type { UserPreferences, Recommendation, Language } from './types';
+import type { UserPreferences, Recommendation } from './types';
 import { getRecommendations } from './services/geminiApi';
 import { APIError } from './utils/errorHandling';
 
@@ -36,7 +36,7 @@ function AppContent({}: AppContentProps) {
       console.error('Error getting recommendations:', error);
       if (error instanceof APIError) {
         setError(error.message);
-        setDebugInfo(error.details || null);
+        setDebugInfo(error.details?.toString() || null);
       } else {
         setError(typeof error === 'string' ? error : translations[language].generalError);
         setDebugInfo(error instanceof Error ? error.stack || null : null);
@@ -47,7 +47,7 @@ function AppContent({}: AppContentProps) {
   };
 
   const handleLanguageChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    setLanguage(e.target.value as Language);
+    setLanguage(e.target.value);
   };
 
   return (
@@ -102,10 +102,6 @@ function AppContent({}: AppContentProps) {
       </main>
     </div>
   );
-}
-
-interface LanguageProviderProps {
-  children: React.ReactNode;
 }
 
 export default function App() {

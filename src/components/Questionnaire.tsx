@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import type { UserPreferences, PersonalityTraits, MoodType, TimeContext, EnergyLevel, Language } from '../types';
+import type { UserPreferences, PersonalityTraits, MoodType, TimeContext, EnergyLevel, Language } from '../types/index';
 import { translations } from '../translations/index';
 
 export function Questionnaire({ onSubmit }: { onSubmit: (preferences: UserPreferences) => void }) {
   const { language } = useLanguage();
-  const t = translations[language];
 
   // Helper function to handle translation values that might be functions
   function tString(key: keyof typeof translations.en): string {
@@ -50,7 +49,7 @@ export function Questionnaire({ onSubmit }: { onSubmit: (preferences: UserPrefer
         mood,
         timeOfDay,
         energyLevel,
-        recentActivities: [],
+        recentActivities: [] as string[],
         stressLevel: 3,
       },
       lifestyle: {
@@ -83,7 +82,7 @@ export function Questionnaire({ onSubmit }: { onSubmit: (preferences: UserPrefer
         <div className="space-y-4">
           {Object.entries(traits).map(([trait, value]) => (
             <div key={trait} className="flex items-center gap-4">
-              <label className="w-40">{tString(trait as keyof typeof t)}</label>
+              <label className="w-40">{tString(trait as keyof typeof translations.en)}</label>
               <input
                 type="range"
                 min="1"
@@ -143,6 +142,41 @@ export function Questionnaire({ onSubmit }: { onSubmit: (preferences: UserPrefer
               }}
             />
             {tString('cuisine')}
+          </label>
+        </div>
+      </section>
+
+      {/* Goals */}
+      <section>
+        <h2 className="text-xl font-semibold mb-4">{tString('goals')}</h2>
+        <div className="grid grid-cols-2 gap-4">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={selectedGoals.includes('personal')}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setSelectedGoals([...selectedGoals, 'personal']);
+                } else {
+                  setSelectedGoals(selectedGoals.filter(g => g !== 'personal'));
+                }
+              }}
+            />
+            Personal Growth
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={selectedGoals.includes('creative')}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setSelectedGoals([...selectedGoals, 'creative']);
+                } else {
+                  setSelectedGoals(selectedGoals.filter(g => g !== 'creative'));
+                }
+              }}
+            />
+            Creative Expression
           </label>
         </div>
       </section>
