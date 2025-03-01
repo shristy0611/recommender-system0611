@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Recommender</title>
+    <link rel="stylesheet" href="src/css/styles.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1>Movie Recommender</h1>
+            <p class="tagline">Get personalized recommendations powered by AI</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="preference-form-section">
+            <h2>Your Preferences</h2>
+            <form id="preferenceForm" class="preference-form">
+                <div class="form-group">
+                    <label for="movieGenres">Favorite Movie Genres:</label>
+                    <div class="chip-container" id="movieGenresContainer">
+                        <div class="chip-options">
+                            <span class="chip" data-genre="Action">Action</span>
+                            <span class="chip" data-genre="Comedy">Comedy</span>
+                            <span class="chip" data-genre="Drama">Drama</span>
+                            <span class="chip" data-genre="Sci-Fi">Sci-Fi</span>
+                            <span class="chip" data-genre="Horror">Horror</span>
+                            <span class="chip" data-genre="Romance">Romance</span>
+                            <span class="chip" data-genre="Thriller">Thriller</span>
+                            <span class="chip" data-genre="Fantasy">Fantasy</span>
+                        </div>
+                        <input type="hidden" id="movieGenres" name="movieGenres">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="musicGenres">Favorite Music Genres:</label>
+                    <div class="chip-container" id="musicGenresContainer">
+                        <div class="chip-options">
+                            <span class="chip" data-genre="Rock">Rock</span>
+                            <span class="chip" data-genre="Pop">Pop</span>
+                            <span class="chip" data-genre="Hip-Hop">Hip-Hop</span>
+                            <span class="chip" data-genre="Jazz">Jazz</span>
+                            <span class="chip" data-genre="Classical">Classical</span>
+                            <span class="chip" data-genre="Electronic">Electronic</span>
+                            <span class="chip" data-genre="Country">Country</span>
+                            <span class="chip" data-genre="R&B">R&B</span>
+                        </div>
+                        <input type="hidden" id="musicGenres" name="musicGenres">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="additionalPreferences">Additional Preferences:</label>
+                    <textarea id="additionalPreferences" name="additionalPreferences" rows="3" placeholder="Tell us more about what you enjoy..."></textarea>
+                </div>
+
+                <button type="submit" class="btn-primary">Get Recommendations</button>
+            </form>
+        </section>
+
+        <section class="recommendations-section" id="recommendationsSection">
+            <div class="recommendations-container" id="recommendationsContainer">
+                <!-- Recommendations will be displayed here -->
+                <div class="empty-state">
+                    <p>Submit your preferences to see personalized recommendations</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cache Statistics Section -->
+        <section id="cacheStatsContainer" class="cache-stats-panel" style="display: none;">
+            <div class="cache-stats-header">
+                <h3>Cache Statistics</h3>
+                <button id="clearCacheButton" class="cache-clear-button">Clear Cache</button>
+            </div>
+            <div class="cache-stats-content">
+                <div class="cache-stat-item">
+                    <div id="totalCacheCount" class="cache-stat-value">0</div>
+                    <div class="cache-stat-label">Total Cache Entries</div>
+                </div>
+                <div class="cache-stat-item">
+                    <div id="activeCacheCount" class="cache-stat-value">0</div>
+                    <div class="cache-stat-label">Active Entries</div>
+                </div>
+                <div class="cache-stat-item">
+                    <div id="expiredCacheCount" class="cache-stat-value">0</div>
+                    <div class="cache-stat-label">Expired Entries</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="loading-container" id="loadingContainer">
+        <div class="loading-spinner"></div>
+        <p>Generating your personalized recommendations...</p>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Movie Recommender. Powered by AI.</p>
+        </div>
+    </footer>
+
+    <script src="src/js/util.js"></script>
+    <script src="src/js/app.js"></script>
+
+    <!-- Add this before the closing body tag -->
+    <script>
+        // Function to load and display cache stats
+        async function loadCacheStats() {
+            try {
+                const response = await fetch('http://localhost:3000/api/cache-stats');
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('totalCacheCount').textContent = data.total;
+                    document.getElementById('activeCacheCount').textContent = data.active;
+                    document.getElementById('expiredCacheCount').textContent = data.expired;
+                    
+                    // Only show if there are any cache entries
+                    if (data.total > 0) {
+                        document.getElementById('cacheStatsContainer').style.display = 'block';
+                    } else {
+                        document.getElementById('cacheStatsContainer').style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading cache stats:', error);
+            }
+        }
+        
+        // Handle clear cache button
+        document.getElementById('clearCacheButton').addEventListener('click', async () => {
+            try {
+                const response = await fetch('http://localhost:3000/api/cache-clear', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    // Reload stats after clearing
+                    loadCacheStats();
+                    alert('Cache cleared successfully');
+                }
+            } catch (error) {
+                console.error('Error clearing cache:', error);
+                alert('Failed to clear cache');
+            }
+        });
+        
+        // Load cache stats on page load and after recommendations
+        document.addEventListener('DOMContentLoaded', loadCacheStats);
+        
+        // Refresh cache stats every 30 seconds
+        setInterval(loadCacheStats, 30000);
+    </script>
+</body>
+</html> 
